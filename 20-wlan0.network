@@ -1,0 +1,8 @@
+[Match]
+Name=wlan0
+
+[Network]
+Address=192.168.8.1/24
+Address=fd7e:8:8::1/64
+IPForward=yes
+IPv6AcceptRA=no
