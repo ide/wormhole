@@ -48,10 +48,14 @@ sed -i 's|^#\?DAEMON_CONF=.*|DAEMON_CONF="/etc/hostapd/hostapd.conf"|' /etc/defa
 sysctl --system
 
 # Firewall rules (v4 + v6)
-iptables -t nat -A POSTROUTING -s 192.168.8.0/24  -o tailscale0 -j MASQUERADE
+iptables -t nat -F POSTROUTING
+iptables -F FORWARD
+iptables -t nat -A POSTROUTING -s 192.168.8.0/24 -o tailscale0 -j MASQUERADE
 iptables -A FORWARD -i wlan0 -o tailscale0 -j ACCEPT
 iptables -A FORWARD -i tailscale0 -o wlan0 -m state --state RELATED,ESTABLISHED -j ACCEPT
 
+ip6tables -t nat -F POSTROUTING
+ip6tables -F FORWARD
 ip6tables -t nat -A POSTROUTING -s fd7e:8:8::/64 -o tailscale0 -j MASQUERADE
 ip6tables -A FORWARD -i wlan0 -o tailscale0 -j ACCEPT
 ip6tables -A FORWARD -i tailscale0 -o wlan0 -m state --state RELATED,ESTABLISHED -j ACCEPT
