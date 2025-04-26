@@ -25,16 +25,20 @@ apt update
 apt install -y hostapd dnsmasq iptables-persistent tailscale
 
 # Copy configuration files
-install -m644 hostapd.conf      /etc/hostapd/hostapd.conf
-install -m644 dnsmasq.conf      /etc/dnsmasq.d/wormhole.conf
-install -m644 20-wlan0.network  /etc/systemd/network/20-wlan0.network
-install -m644 30-eth0.network   /etc/systemd/network/30-eth0.network
-install -m644 99-wormhole.conf  /etc/sysctl.d/99-wormhole.conf
-install -m755 localwan.sh       /usr/local/sbin/localwan.sh
+mkdir -p /etc/systemd/system/hostapd.service.d
+
+install -m644 wlan0-online.service      /etc/systemd/system/wlan0-online.service
+install -m644 hostapd.conf              /etc/hostapd/hostapd.conf
+install -m644 10-wait-wlan0.conf        /etc/systemd/system/hostapd.service.d/10-wait-wlan0.conf
+install -m644 dnsmasq.conf              /etc/dnsmasq.d/wormhole.conf
+install -m644 20-wlan0.network          /etc/systemd/network/20-wlan0.network
+install -m644 30-eth0.network           /etc/systemd/network/30-eth0.network
+install -m644 99-wormhole.conf          /etc/sysctl.d/99-wormhole.conf
+install -m755 localwan.sh               /usr/local/sbin/localwan.sh
 install -m644 wormhole-localwan.service /etc/systemd/system/wormhole-localwan.service
 
 # Patch SSID and passphrase
-sed -i "s/^ssid=.*/ssid=${SSID}/"           /etc/hostapd/hostapd.conf
+sed -i "s/^ssid=.*/ssid=${SSID}/" /etc/hostapd/hostapd.conf
 sed -i "s/^wpa_passphrase=.*/wpa_passphrase=${PASSPHRASE}/" /etc/hostapd/hostapd.conf
 
 # Load hostapd configuration file
