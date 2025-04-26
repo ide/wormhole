@@ -22,8 +22,7 @@ curl -fsSL https://pkgs.tailscale.com/stable/raspbian/bookworm.list | tee /etc/a
 
 # Install packages
 apt update
-apt install -y \
-  hostapd dnsmasq iptables-persistent tailscale systemd-networkd
+apt install -y hostapd dnsmasq iptables-persistent tailscale
 
 # Copy configuration files
 install -m644 hostapd.conf      /etc/hostapd/hostapd.conf
