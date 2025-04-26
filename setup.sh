@@ -55,8 +55,8 @@ ip6tables -A FORWARD -i tailscale0 -o wlan0 -m state --state RELATED,ESTABLISHED
 netfilter-persistent save
 
 # Routing table entry for the local router's internet connection
-if ! grep -q '^200 localwan' /etc/iproute2/rt_tables; then
-  echo '200 localwan' >> /etc/iproute2/rt_tables
+if ! grep -q '^200	localwan' /etc/iproute2/rt_tables; then
+  echo '200	localwan' >> /etc/iproute2/rt_tables
 fi
 
 # Free wlan0 from wpa_supplicant
