@@ -8,6 +8,13 @@ EXIT_NODE=${1:-exit} # Tailscale hostname of the exit node
 SSID=${2:-wormhole}  # Wi-Fi name
 PASSPHRASE=${3}      # WPA2 key (≥8 chars)
 
+# Require sudo
+if [ "$EUID" -ne 0 ]; then
+  echo "Error: This script must be run with sudo privileges."
+  echo "Usage: sudo $0 <EXIT_NODE_HOSTNAME> <SSID> <PASSPHRASE>"
+  exit 1
+fi
+
 # Add Tailscale repository
 apt install -y apt-transport-https
 curl -fsSL https://pkgs.tailscale.com/stable/raspbian/bookworm.gpg | apt-key add -
