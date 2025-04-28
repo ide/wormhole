@@ -15,14 +15,23 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-# # Add Tailscale repository
-# apt install -y apt-transport-https
-# curl -fsSL https://pkgs.tailscale.com/stable/raspbian/bookworm.gpg | apt-key add -
-# curl -fsSL https://pkgs.tailscale.com/stable/raspbian/bookworm.list | tee /etc/apt/sources.list.d/tailscale.list
+# Add Tailscale repository
+if ! dpkg -s apt-transport-https >/dev/null 2>&1; then
+  apt update
+  apt install -y apt-transport-https
+fi
+if ! apt-key list | grep Tailscale >/dev/null; then
+  curl -fsSL https://pkgs.tailscale.com/stable/raspbian/bookworm.gpg | apt-key add -
+fi
+if [ ! -f /etc/apt/sources.list.d/tailscale.list ]; then
+  curl -fsSL https://pkgs.tailscale.com/stable/raspbian/bookworm.list > /etc/apt/sources.list.d/tailscale.list
+fi
 
-# # Install packages
-# apt update
-# apt install -y hostapd dnsmasq tailscale
+# Install packages
+if ! dpkg -s hostapd dnsmasq tailscale >/dev/null 2>&1; then
+  apt update
+  apt install -y hostapd dnsmasq tailscale
+fi
 
 # Copy configuration files
 mkdir -p /etc/systemd/system/hostapd.service.d
