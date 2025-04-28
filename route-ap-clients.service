@@ -1,12 +1,11 @@
 [Unit]
-Description=Keep wormhole's own traffic on the local router's internet connection
+Description=Route AP clients via Tailscale exit node
 After=network-online.target tailscaled.service
 Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/sbin/localwan.sh
-RemainAfterExit=yes
+ExecStart=/usr/local/sbin/route-ap-clients.sh
 
 [Install]
 WantedBy=multi-user.target

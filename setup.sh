@@ -5,7 +5,7 @@
 set -euo pipefail
 
 EXIT_NODE=${1:-exit} # Tailscale hostname of the exit node
-SSID=${2:-wormhole}  # Wi-Fi name
+SSID=${2:-wormhole}  # Wi-Fi access point SSID
 PASSPHRASE=${3}      # WPA2 key (≥8 chars)
 
 # Require sudo
@@ -15,25 +15,26 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-# Add Tailscale repository
-apt install -y apt-transport-https
-curl -fsSL https://pkgs.tailscale.com/stable/raspbian/bookworm.gpg | apt-key add -
-curl -fsSL https://pkgs.tailscale.com/stable/raspbian/bookworm.list | tee /etc/apt/sources.list.d/tailscale.list
+# # Add Tailscale repository
+# apt install -y apt-transport-https
+# curl -fsSL https://pkgs.tailscale.com/stable/raspbian/bookworm.gpg | apt-key add -
+# curl -fsSL https://pkgs.tailscale.com/stable/raspbian/bookworm.list | tee /etc/apt/sources.list.d/tailscale.list
 
-# Install packages
-apt update
-apt install -y hostapd dnsmasq iptables-persistent tailscale
+# # Install packages
+# apt update
+# apt install -y hostapd dnsmasq tailscale
 
 # Copy configuration files
 mkdir -p /etc/systemd/system/hostapd.service.d
 
+install -m644 99-wormhole.conf          /etc/sysctl.d/99-wormhole.conf
+install -m644 20-wlan0.network          /etc/systemd/network/20-wlan0.network
+install -m644 dnsmasq.conf              /etc/dnsmasq.d/wormhole.conf
+install -m755 route-ap-clients.sh       /usr/local/sbin/route-ap-clients.sh
+install -m644 route-ap-clients.service  /etc/systemd/system/route-ap-clients.service
 install -m644 hostapd.conf              /etc/hostapd/hostapd.conf
 install -m755 wlan0-ap.sh               /usr/local/sbin/wlan0-ap.sh
 install -m644 10-wlan0-ap.conf          /etc/systemd/system/hostapd.service.d/10-wlan0-ap.conf
-install -m644 dnsmasq.conf              /etc/dnsmasq.d/wormhole.conf
-install -m644 99-wormhole.conf          /etc/sysctl.d/99-wormhole.conf
-install -m755 localwan.sh               /usr/local/sbin/localwan.sh
-install -m644 wormhole-localwan.service /etc/systemd/system/wormhole-localwan.service
 
 # Patch SSID and passphrase
 sed -i "s/^ssid=.*/ssid=${SSID}/" /etc/hostapd/hostapd.conf
@@ -45,36 +46,23 @@ sed -i 's|^#\?DAEMON_CONF=.*|DAEMON_CONF="/etc/hostapd/hostapd.conf"|' /etc/defa
 # Enable forwarding immediately
 sysctl --system
 
-# Firewall rules (v4 + v6)
-iptables -t nat -F POSTROUTING
-iptables -F FORWARD
-iptables -t nat -A POSTROUTING -s 192.168.8.0/24 -o tailscale0 -j MASQUERADE
-iptables -A FORWARD -i wlan0 -o tailscale0 -j ACCEPT
-iptables -A FORWARD -i tailscale0 -o wlan0 -m state --state RELATED,ESTABLISHED -j ACCEPT
-
-ip6tables -t nat -F POSTROUTING
-ip6tables -F FORWARD
-ip6tables -t nat -A POSTROUTING -s fd7e:8:8::/64 -o tailscale0 -j MASQUERADE
-ip6tables -A FORWARD -i wlan0 -o tailscale0 -j ACCEPT
-ip6tables -A FORWARD -i tailscale0 -o wlan0 -m state --state RELATED,ESTABLISHED -j ACCEPT
-
-netfilter-persistent save
-
-# Routing table entry for the local router's internet connection
-if ! grep -q '^200	localwan' /etc/iproute2/rt_tables; then
-  echo '200	localwan' >> /etc/iproute2/rt_tables
+# Routing table entries for the remote router's internet connection
+if ! grep -q '^100	exitnode4' /etc/iproute2/rt_tables; then
+  echo '100	exitnode4' >> /etc/iproute2/rt_tables
+fi
+if ! grep -q '^101	exitnode6' /etc/iproute2/rt_tables; then
+  echo '101	exitnode6' >> /etc/iproute2/rt_tables
 fi
 
 # Free wlan0 from wpa_supplicant
 systemctl mask --now wpa_supplicant.service
 
 # systemd enablement
-systemctl enable --now hostapd dnsmasq systemd-networkd
 systemctl daemon-reload
-systemctl enable --now wormhole-localwan.service
+systemctl reload systemd-networkd
+systemctl enable --now hostapd dnsmasq route-ap-clients
 
 # Route traffic through the exit node
 tailscale up --exit-node="${EXIT_NODE}" --exit-node-allow-lan-access
 
-# Note: confirm with iw dev wlan0 info
 echo 'Setup complete. Reboot recommended. Confirm AP mode with: iw dev wlan0 info'
