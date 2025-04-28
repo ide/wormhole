@@ -79,4 +79,4 @@ systemctl enable --now wormhole-localwan.service
 tailscale up --exit-node="${EXIT_NODE}" --exit-node-allow-lan-access
 
 # Note: confirm with iw dev wlan0 info
-echo 'Setup complete. Reboot recommended.'
+echo 'Setup complete. Reboot recommended. Confirm AP mode with: iw dev wlan0 info'
