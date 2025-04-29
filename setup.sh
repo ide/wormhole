@@ -66,12 +66,18 @@ fi
 # Free wlan0 from wpa_supplicant
 systemctl mask --now wpa_supplicant.service
 
-# systemd enablement
+# Use systemd-networkd to manage wlan0
 systemctl daemon-reload
+systemctl enable --now systemd-networkd
 systemctl reload systemd-networkd
+
+# hostapd may be masked if Raspberry Pi OS was not initialized with an SSID and passphrase
+systemctl unmask hostapd
 systemctl enable --now hostapd dnsmasq route-ap-clients
+systemctl reload dnsmasq
 
 # Route traffic through the exit node
+tailscale login
 tailscale up --exit-node="${EXIT_NODE}" --exit-node-allow-lan-access
 
 echo 'Setup complete. Reboot recommended. Confirm AP mode with: iw dev wlan0 info'
