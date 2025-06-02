@@ -58,8 +58,6 @@ mkdir -p /etc/systemd/system/hostapd.service.d
 install -m644 99-wormhole.conf          /etc/sysctl.d/99-wormhole.conf
 install -m644 20-wlan0.network          /etc/systemd/network/20-wlan0.network
 install -m644 dnsmasq.conf              /etc/dnsmasq.d/wormhole.conf
-install -m755 route-ap-clients.sh       /usr/local/sbin/route-ap-clients.sh
-install -m644 route-ap-clients.service  /etc/systemd/system/route-ap-clients.service
 install -m644 hostapd.conf              /etc/hostapd/hostapd.conf
 install -m755 wlan0-ap.sh               /usr/local/sbin/wlan0-ap.sh
 install -m644 10-wlan0-ap.conf          /etc/systemd/system/hostapd.service.d/10-wlan0-ap.conf
@@ -74,14 +72,6 @@ sed -i 's|^#\?DAEMON_CONF=.*|DAEMON_CONF="/etc/hostapd/hostapd.conf"|' /etc/defa
 # Enable forwarding immediately
 sysctl --system
 
-# Routing table entries for the remote router's internet connection
-if ! grep -q '^100	exitnode4' /etc/iproute2/rt_tables; then
-  echo '100	exitnode4' >> /etc/iproute2/rt_tables
-fi
-if ! grep -q '^101	exitnode6' /etc/iproute2/rt_tables; then
-  echo '101	exitnode6' >> /etc/iproute2/rt_tables
-fi
-
 # Free wlan0 from wpa_supplicant
 systemctl mask --now wpa_supplicant.service
 
@@ -92,7 +82,7 @@ systemctl reload systemd-networkd
 
 # hostapd may be masked if Raspberry Pi OS was not initialized with an SSID and passphrase
 systemctl unmask hostapd
-systemctl enable --now hostapd dnsmasq route-ap-clients
+systemctl enable --now hostapd dnsmasq
 systemctl reload dnsmasq
 
 # Route traffic through the exit node
