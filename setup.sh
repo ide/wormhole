@@ -1,17 +1,36 @@
 #!/usr/bin/env bash
-# Usage:   sudo ./setup.sh <EXIT_NODE_HOSTNAME> <SSID> <PASSPHRASE>
+# Usage:   sudo ./setup.sh [EXIT_NODE_HOSTNAME] [SSID] [PASSPHRASE]
 # Example: sudo ./setup.sh exitportal wormhole ChangeMe123
+# 
+# Environment variables (used as fallback):
+#   WORMHOLE_EXIT_NODE       - Tailscale hostname of the exit node
+#   WORMHOLE_WIFI_SSID       - Wi-Fi access point SSID
+#   WORMHOLE_WIFI_PASSPHRASE - WPA2 key (≥8 chars)
 
 set -euo pipefail
 
-EXIT_NODE=${1:-exit} # Tailscale hostname of the exit node
-SSID=${2:-wormhole}  # Wi-Fi access point SSID
-PASSPHRASE=${3}      # WPA2 key (≥8 chars)
+# Get variables with fallback: CLI args -> env vars -> defaults/empty
+EXIT_NODE=${1:-${WORMHOLE_EXIT_NODE:-}}
+SSID=${2:-${WORMHOLE_WIFI_SSID:-wormhole}}
+PASSPHRASE=${3:-${WORMHOLE_WIFI_PASSPHRASE:-}}
+
+# Error if required variables are missing
+if [ -z "$EXIT_NODE" ]; then
+    echo "Error: Exit node not specified. Provide as first argument or set WORMHOLE_EXIT_NODE environment variable."
+    echo "Usage: sudo $0 [EXIT_NODE_HOSTNAME] [SSID] [PASSPHRASE]"
+    exit 1
+fi
+
+if [ -z "$PASSPHRASE" ]; then
+    echo "Error: Wi-Fi passphrase not specified. Provide as third argument or set WORMHOLE_WIFI_PASSPHRASE environment variable."
+    echo "Usage: sudo $0 [EXIT_NODE_HOSTNAME] [SSID] [PASSPHRASE]"
+    exit 1
+fi
 
 # Require sudo
 if [ "$EUID" -ne 0 ]; then
   echo "Error: This script must be run with sudo privileges."
-  echo "Usage: sudo $0 <EXIT_NODE_HOSTNAME> <SSID> <PASSPHRASE>"
+  echo "Usage: sudo $0 [EXIT_NODE_HOSTNAME] [SSID] [PASSPHRASE]"
   exit 1
 fi
 
