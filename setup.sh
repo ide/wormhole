@@ -47,9 +47,9 @@ if [ ! -f /etc/apt/sources.list.d/tailscale.list ]; then
 fi
 
 # Install packages
-if ! dpkg -s hostapd dnsmasq tailscale >/dev/null 2>&1; then
+if ! dpkg -s hostapd dnsmasq iptables-persistent tailscale >/dev/null 2>&1; then
   apt update
-  apt install -y hostapd dnsmasq tailscale
+  apt install -y hostapd dnsmasq iptables-persistent tailscale
 fi
 
 # Copy configuration files
@@ -88,5 +88,29 @@ systemctl reload dnsmasq
 # Route traffic through the exit node
 tailscale login
 tailscale up --exit-node="${EXIT_NODE}" --exit-node-allow-lan-access
+
+# Add NAT/masquerading
+iptables -t nat -C POSTROUTING -s 192.168.8.0/24 -o tailscale0 -j MASQUERADE 2>/dev/null || \
+iptables -t nat -A POSTROUTING -s 192.168.8.0/24 -o tailscale0 -j MASQUERADE
+
+ip6tables -t nat -C POSTROUTING -s fd7e:8:8::/64 -o tailscale0 -j MASQUERADE 2>/dev/null || \
+ip6tables -t nat -A POSTROUTING -s fd7e:8:8::/64 -o tailscale0 -j MASQUERADE
+
+# Add forwarding rules between wlan0 and tailscale0
+iptables -C FORWARD -i wlan0 -o tailscale0 -j ACCEPT 2>/dev/null || \
+iptables -A FORWARD -i wlan0 -o tailscale0 -j ACCEPT
+
+iptables -C FORWARD -i tailscale0 -o wlan0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT 2>/dev/null || \
+iptables -A FORWARD -i tailscale0 -o wlan0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+
+ip6tables -C FORWARD -i wlan0 -o tailscale0 -j ACCEPT 2>/dev/null || \
+ip6tables -A FORWARD -i wlan0 -o tailscale0 -j ACCEPT
+
+ip6tables -C FORWARD -i tailscale0 -o wlan0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT 2>/dev/null || \
+ip6tables -A FORWARD -i tailscale0 -o wlan0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+
+# Save rules
+iptables-save > /etc/iptables/rules.v4
+ip6tables-save > /etc/iptables/rules.v6
 
 echo 'Setup complete. Reboot recommended. Confirm AP mode with: iw dev wlan0 info'
