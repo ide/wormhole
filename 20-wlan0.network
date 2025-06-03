@@ -6,4 +6,4 @@ Address=192.168.8.1/24
 Address=fd7e:8:8::1/64
 IPForward=yes
 IPv6AcceptRA=no
-MTU=1280                # Match tailscale0's MTU and prevent fragmentation
+MTU=1200

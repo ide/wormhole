@@ -66,6 +66,7 @@ fi
 mkdir -p /etc/systemd/system/hostapd.service.d
 
 install -m644 99-wormhole.conf          /etc/sysctl.d/99-wormhole.conf
+install -m644 20-end0.network           /etc/systemd/network/20-end0.network
 install -m644 20-wlan0.network          /etc/systemd/network/20-wlan0.network
 install -m644 dnsmasq.conf              /etc/dnsmasq.d/wormhole.conf
 install -m644 hostapd.conf              /etc/hostapd/hostapd.conf
