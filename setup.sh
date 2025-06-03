@@ -73,6 +73,20 @@ install -m644 hostapd.conf              /etc/hostapd/hostapd.conf
 install -m755 wlan0-ap.sh               /usr/local/sbin/wlan0-ap.sh
 install -m644 10-wlan0-ap.conf          /etc/systemd/system/hostapd.service.d/10-wlan0-ap.conf
 
+# Configure NetworkManager to ignore wlan0 (access point interface)
+if [ -f /etc/NetworkManager/NetworkManager.conf ]; then
+  if ! grep -q 'unmanaged-devices.*wlan0' /etc/NetworkManager/NetworkManager.conf; then
+    # Check if [keyfile] section exists
+    if grep -q "^\[keyfile\]" /etc/NetworkManager/NetworkManager.conf; then
+      # Add unmanaged-devices to existing [keyfile] section
+      sed -i '/^\[keyfile\]/a unmanaged-devices=interface-name:wlan0' /etc/NetworkManager/NetworkManager.conf
+    else
+      # Add [keyfile] section with unmanaged-devices
+      echo -e "\n[keyfile]\nunmanaged-devices=interface-name:wlan0" >> /etc/NetworkManager/NetworkManager.conf
+    fi
+  fi
+fi
+
 # Patch SSID and passphrase
 sed -i "s/^ssid=.*/ssid=${SSID}/" /etc/hostapd/hostapd.conf
 sed -i "s/^wpa_passphrase=.*/wpa_passphrase=${PASSPHRASE}/" /etc/hostapd/hostapd.conf
