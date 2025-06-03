@@ -6,6 +6,16 @@
 #   WORMHOLE_EXIT_NODE       - Tailscale hostname of the exit node
 #   WORMHOLE_WIFI_SSID       - Wi-Fi access point SSID
 #   WORMHOLE_WIFI_PASSPHRASE - WPA2 key (≥8 chars)
+#
+# You can also create a .env file in the same directory with these variables
+
+# Load .env file if it exists
+if [ -f "$(dirname "$0")/.env" ]; then
+    echo "Loading environment variables from .env file..."
+    set -a  # automatically export all variables
+    source "$(dirname "$0")/.env"
+    set +a  # disable automatic export
+fi
 
 set -euo pipefail
 
@@ -86,7 +96,6 @@ systemctl enable --now hostapd dnsmasq
 systemctl reload dnsmasq
 
 # Route traffic through the exit node
-tailscale login
 tailscale up --exit-node="${EXIT_NODE}" --exit-node-allow-lan-access
 
 # Add NAT/masquerading
