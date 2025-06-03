@@ -1,6 +1,11 @@
 [Match]
 Name=end0
 
+[Link]
+MTUBytes=1280
+
 [Network]
 DHCP=yes
-MTU=1200 
+
+[DHCPv4]
+UseMTU=no 
